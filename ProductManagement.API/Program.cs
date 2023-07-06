@@ -3,6 +3,10 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ProductManagement.API.Configuration;
 using ProductManagement.Application;
+using Serilog;
+using Serilog.Events;
+using Serilog.Filters;
+using Serilog.Formatting.Json;
 using ServiceImplementation;
 using System.Text;
 
@@ -12,6 +16,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+builder.Host.UseSerilog((ctx, lc) => lc
+    .MinimumLevel.Debug()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.File("FTTHAPI-log-.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 186)
+    .WriteTo.Console());
+
+
+//Log.Information("Hello, world!");
+
+
+//builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen( options =>
 {
@@ -66,6 +83,7 @@ builder.Services.AddAuthentication(
 
 
 var app = builder.Build();
+app.UseSerilogRequestLogging();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

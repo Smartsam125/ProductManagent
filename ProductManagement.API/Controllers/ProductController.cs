@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using ProductManagement.API.Configuration;
 using ProductManagement.Application;
 using ProductManagement.Core.Entities;
+using Serilog;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -63,13 +64,25 @@ namespace ProductManagement.API.Controllers
         [HttpPost("Register")]
         public async Task<IActionResult> Register(UserAuth userLogin)
         {
-            var result = await _userLogin.AddUserAsync(userLogin);
-            if(result == 0)
+            //UserAuth userAuth = new UserAuth();
+            Validation validation =new Validation();
+
+            if (!validation.Validate(userLogin).IsValid)
             {
-                return BadRequest(new { Status = 400, Message = "User Name Already Exist" });
+                return BadRequest(new { Status = 400, Message = validation.Validate(userLogin).Errors.Select((x) => x.ErrorMessage)});
             }
-            else {
-                 return Ok(result);
+            else
+            {
+                var result = await _userLogin.AddUserAsync(userLogin);
+                if (result == 0)
+                {
+                    return BadRequest(new { Status = 400, Message = "User Name Already Exist" });
+                }
+                else
+                {   Log.Debug($"User `{@result} added`");
+                    Log.Information($"User `{@result} added `");
+                    return Ok(result);
+                }
             }
            
         }
